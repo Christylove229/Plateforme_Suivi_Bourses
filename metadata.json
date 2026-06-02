@@ -1,0 +1,6 @@
+{
+  "name": "Suivi de Bourses d'Études",
+  "description": "Plateforme moderne académique de suivi et de recommandation de bourses d'études internationales pour vos groupes d'utilisatrices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
