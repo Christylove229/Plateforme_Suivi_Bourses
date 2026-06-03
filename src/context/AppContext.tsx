@@ -22,6 +22,8 @@ interface AppContextProps {
   resetPassword: (email: string) => Promise<string | null>;
   adminCreateUser: (prenom: string, nom: string, email: string, domaine: string) => Promise<{ success: boolean; tempPass: string; error?: string }>;
   adminToggleUserActive: (userId: string, currentStatus: boolean) => Promise<void>;
+  adminDeleteUser: (userId: string) => Promise<string | null>;
+  deleteUser: () => Promise<string | null>;
   updateProfileDomain: (newDomain: string) => Promise<string | null>;
   addScholarship: (scholarship: Omit<Scholarship, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateScholarship: (scholarship: Scholarship) => Promise<void>;
@@ -264,7 +266,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Admin: Toggle Active State
   const adminToggleUserActive = async (userId: string, currentStatus: boolean) => {
     if (userId === currentUser?.id) return; // Cannot suspend self
-    
+
     const { error } = await supabase
       .from('profiles')
       .update({ is_active: !currentStatus })
@@ -272,6 +274,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!error) {
       fetchData(); // refresh list
+    }
+  };
+
+  // Admin: Delete User
+  const adminDeleteUser = async (userId: string): Promise<string | null> => {
+    if (userId === currentUser?.id) return "Vous ne pouvez pas supprimer votre propre compte.";
+    if (!currentUser || currentUser.role !== 'ADMIN') return "Accès non autorisé.";
+
+    setLoading(true);
+
+    try {
+      // Delete from Supabase Auth (this will cascade delete from profiles, scholarships, recommendations)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        setLoading(false);
+        return authError.message;
+      }
+
+      // Refresh data
+      await fetchData();
+      setLoading(false);
+      return null;
+    } catch (error: any) {
+      setLoading(false);
+      return error.message || "Erreur lors de la suppression de l'utilisateur.";
+    }
+  };
+
+  // User: Delete Own Account
+  const deleteUser = async (): Promise<string | null> => {
+    if (!currentUser) return "Utilisateur non connecté.";
+
+    setLoading(true);
+
+    try {
+      // Delete from Supabase Auth (this will cascade delete from profiles, scholarships, recommendations)
+      const { error: authError } = await supabase.auth.admin.deleteUser(currentUser.id);
+
+      if (authError) {
+        setLoading(false);
+        return authError.message;
+      }
+
+      // Logout after deletion
+      await supabase.auth.signOut();
+      setLoading(false);
+      return null;
+    } catch (error: any) {
+      setLoading(false);
+      return error.message || "Erreur lors de la suppression de votre compte.";
     }
   };
 
@@ -433,6 +486,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetPassword,
       adminCreateUser,
       adminToggleUserActive,
+      adminDeleteUser,
+      deleteUser,
       updateProfileDomain,
       addScholarship,
       updateScholarship,

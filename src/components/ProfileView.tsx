@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  User, 
-  BookMarked, 
-  Calendar, 
+import {
+  User,
+  BookMarked,
+  Calendar,
   Fingerprint,
   Mail,
   ListRestart,
   Lock,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const ProfileView: React.FC = () => {
-  const { currentUser, updateProfileDomain, changePassword } = useApp();
+  const { currentUser, updateProfileDomain, changePassword, deleteUser, loading } = useApp();
 
   // Password modify fields state
   const [oldPass, setOldPass] = useState('');
@@ -27,6 +29,10 @@ export const ProfileView: React.FC = () => {
   const [studyField, setStudyField] = useState(currentUser?.domaine_etudes || '');
   const [fieldSuccess, setFieldSuccess] = useState(false);
   const [domainLoading, setDomainLoading] = useState(false);
+
+  // Delete account state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleUpdateStudyField = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +66,7 @@ export const ProfileView: React.FC = () => {
     if (!currentUser) return;
 
     setPassLoading(true);
-    
+
     // Vérification de l'ancien mot de passe en tentant un re-login
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: currentUser.email,
@@ -84,6 +90,16 @@ export const ProfileView: React.FC = () => {
       setOldPass('');
       setNewPass('');
       setConfirmPass('');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    const error = await deleteUser();
+    if (error) {
+      setDeleteError(error);
+    } else {
+      setShowDeleteModal(false);
     }
   };
 
@@ -207,7 +223,7 @@ export const ProfileView: React.FC = () => {
         </div>
 
         {/* Password Modification panel */}
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-6 space-y-5">
           <div className="bg-slate-950 border border-slate-850 rounded-2xl p-5 space-y-4 relative">
              {passLoading && (
                 <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
@@ -280,9 +296,72 @@ export const ProfileView: React.FC = () => {
               </div>
             </form>
           </div>
+
+          {/* Delete Account Card */}
+          <div className="bg-rose-950/10 border border-rose-500/20 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2 border-b border-rose-500/10 pb-2.5">
+              <Trash2 className="h-4.5 w-4.5 text-rose-500" />
+              <h3 className="text-sm font-sans font-semibold text-rose-400 uppercase tracking-wider">Zone de Danger</h3>
+            </div>
+            <p className="text-xs text-slate-400">
+              La suppression de votre compte est irréversible. Toutes vos données (bourses, recommandations, profil) seront définitivement supprimées de la base de données.
+            </p>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 hover:text-rose-400 font-semibold rounded-xl text-xs cursor-pointer transition-colors flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Supprimer mon compte</span>
+            </button>
+          </div>
         </div>
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 shrink-0">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-1">Supprimer votre compte</h3>
+                <p className="text-sm text-slate-400">
+                  Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et supprimera toutes vos données (bourses, recommandations, profil).
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError(null);
+                }}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-sm text-slate-300 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={loading}
+                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                <span>Supprimer définitivement</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

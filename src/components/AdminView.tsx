@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  UserPlus, 
-  Users, 
-  Mail, 
-  Copy, 
-  Check, 
+import {
+  UserPlus,
+  Users,
+  Mail,
+  Copy,
+  Check,
   Send,
   UserCheck2,
   LockKeyhole,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 export const AdminView: React.FC = () => {
-  const { 
-    profiles, 
-    emails, 
-    adminCreateUser, 
+  const {
+    profiles,
+    emails,
+    adminCreateUser,
     adminToggleUserActive,
-    loading 
+    adminDeleteUser,
+    loading
   } = useApp();
 
   // New user form state
@@ -32,6 +35,10 @@ export const AdminView: React.FC = () => {
 
   // Copied indicator state
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +56,21 @@ export const AdminView: React.FC = () => {
       return;
     }
 
-    setFormSuccess({ tempPass, email: formEmail.trim().toLowerCase() });
+    setFormSuccess({ tempPass, email: formEmail });
     setFormPrenom('');
     setFormNom('');
     setFormEmail('');
     setFormDomaine('');
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeleteError(null);
+    const error = await adminDeleteUser(userId);
+    if (error) {
+      setDeleteError(error);
+    } else {
+      setDeleteUserId(null);
+    }
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -233,17 +250,26 @@ export const AdminView: React.FC = () => {
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-right select-none">
-                        <button
-                          onClick={() => adminToggleUserActive(user.id, user.is_active)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold font-mono transition-colors cursor-pointer ${
-                            user.is_active 
-                              ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/20 hover:border-rose-500/20 text-emerald-400 hover:text-rose-400' 
-                              : 'bg-rose-500/5 hover:bg-emerald-500/10 border-rose-500/15 hover:border-emerald-500/20 text-rose-500 hover:text-emerald-400'
-                          }`}
-                          title={user.is_active ? "Désactiver le compte" : "Réactiver le compte"}
-                        >
-                          {user.is_active ? "Actif • Suspendre" : "Suspendu • Débloquer"}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => adminToggleUserActive(user.id, user.is_active)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold font-mono transition-colors cursor-pointer ${
+                              user.is_active
+                                ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/20 hover:border-rose-500/20 text-emerald-400 hover:text-rose-400'
+                                : 'bg-rose-500/5 hover:bg-emerald-500/10 border-rose-500/15 hover:border-emerald-500/20 text-rose-500 hover:text-emerald-400'
+                            }`}
+                            title={user.is_active ? "Désactiver le compte" : "Réactiver le compte"}
+                          >
+                            {user.is_active ? "Actif • Suspendre" : "Suspendu • Débloquer"}
+                          </button>
+                          <button
+                            onClick={() => setDeleteUserId(user.id)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-400 text-[10px] font-bold font-mono transition-colors cursor-pointer"
+                            title="Supprimer le compte"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -339,6 +365,51 @@ export const AdminView: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteUserId && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 shrink-0">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-1">Supprimer le compte</h3>
+                <p className="text-sm text-slate-400">
+                  Êtes-vous sûr de vouloir supprimer ce compte ? Cette action est irréversible et supprimera toutes les données associées (bourses, recommandations).
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setDeleteUserId(null);
+                  setDeleteError(null);
+                }}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-sm text-slate-300 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleDeleteUser(deleteUserId)}
+                disabled={loading}
+                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                <span>Supprimer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
