@@ -1,10 +1,10 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
-const resend = new Resend(process.env.RESEND_API_KEY as string);
+const resend = new Resend(process.env.VITE_RESEND_API_KEY as string);
 const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string
 );
 
 export default async function handler(req: any, res: any) {

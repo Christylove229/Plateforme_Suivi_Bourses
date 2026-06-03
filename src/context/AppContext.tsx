@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  UserProfile, 
-  Scholarship, 
-  Recommendation, 
+import {
+  UserProfile,
+  Scholarship,
+  Recommendation,
   SentInvitationEmailSimulated,
   ScholarshipStatus,
   ScholarshipPriority
 } from '../types';
 import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 interface AppContextProps {
   currentUser: UserProfile | null;
@@ -285,8 +286,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
 
     try {
+      // Create admin client with SERVICE ROLE KEY for admin operations
+      const supabaseAdmin = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
       // Delete from Supabase Auth (this will cascade delete from profiles, scholarships, recommendations)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
       if (authError) {
         setLoading(false);

@@ -68,9 +68,9 @@ Dans les settings du projet Vercel, ajoute ces variables :
 |----------|-------------|--------|
 | `VITE_SUPABASE_URL` | URL du projet Supabase | Supabase Dashboard > Settings > API |
 | `VITE_SUPABASE_ANON_KEY` | Clé publique Supabase | Supabase Dashboard > Settings > API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clé admin Supabase | Supabase Dashboard > Settings > API |
-| `RESEND_API_KEY` | Clé API Resend | Resend Dashboard > API Keys |
-| `GEMINI_API_KEY` | Clé API Google Gemini | Google AI Studio |
+| `VITE_SUPABASE_SERVICE_ROLE_KEY` | Clé admin Supabase | Supabase Dashboard > Settings > API |
+| `VITE_RESEND_API_KEY` | Clé API Resend | Resend Dashboard > API Keys |
+| `VITE_GEMINI_API_KEY` | Clé API Google Gemini | Google AI Studio |
 
 ### 3. Configurer les fonctions serverless
 
