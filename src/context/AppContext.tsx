@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   UserProfile,
   Scholarship,
@@ -52,6 +52,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return (localStorage.getItem('scholar_theme') as 'dark' | 'light') || 'dark';
   });
 
+  // Inactivity timeout (30 minutes)
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const toggleTheme = () => {
     setTheme(prev => {
       const next = prev === 'dark' ? 'light' : 'dark';
@@ -60,11 +65,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Update last activity on user interaction
+  const updateActivity = () => {
+    setLastActivity(Date.now());
+  };
+
+  // Check for inactivity and logout if needed
+  const checkInactivity = () => {
+    const now = Date.now();
+    const timeSinceActivity = now - lastActivity;
+
+    if (timeSinceActivity > INACTIVITY_TIMEOUT && currentUser) {
+      supabase.auth.signOut();
+    }
+  };
+
+  useEffect(() => {
+    // Add event listeners for user activity
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, updateActivity);
+    });
+
+    // Check inactivity every minute
+    inactivityTimerRef.current = setInterval(checkInactivity, 60000);
+
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+      if (inactivityTimerRef.current) {
+        clearInterval(inactivityTimerRef.current);
+      }
+    };
+  }, [lastActivity, currentUser]);
+
   useEffect(() => {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        // Verify session is still valid by getting user
+        supabase.auth.getUser(session.access_token).then(({ data, error }) => {
+          if (error || !data.user) {
+            // Session invalid, sign out
+            supabase.auth.signOut();
+            setLoading(false);
+          } else {
+            fetchUserProfile(session.user.id);
+          }
+        });
       } else {
         setLoading(false);
       }
@@ -286,18 +335,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
 
     try {
-      // Create admin client with SERVICE ROLE KEY for admin operations
-      const supabaseAdmin = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-      );
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/delete-user', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
 
-      // Delete from Supabase Auth (this will cascade delete from profiles, scholarships, recommendations)
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-      if (authError) {
+      if (!res.ok) {
         setLoading(false);
-        return authError.message;
+        return data.error || 'Erreur inconnue';
       }
 
       // Refresh data
@@ -317,12 +368,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
 
     try {
-      // Delete from Supabase Auth (this will cascade delete from profiles, scholarships, recommendations)
-      const { error: authError } = await supabase.auth.admin.deleteUser(currentUser.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/delete-own-account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        }
+      });
+      const data = await res.json();
 
-      if (authError) {
+      if (!res.ok) {
         setLoading(false);
-        return authError.message;
+        return data.error || 'Erreur inconnue';
       }
 
       // Logout after deletion

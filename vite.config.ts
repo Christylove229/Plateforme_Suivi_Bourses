@@ -51,6 +51,18 @@ export default defineConfig(() => {
             (req as any).body = await readJsonBody(req);
             await handler(req, createVercelResponse(res));
           });
+
+          server.middlewares.use('/api/delete-user', async (req, res) => {
+            const { default: handler } = await import('./api/delete-user');
+            (req as any).body = await readJsonBody(req);
+            await handler(req, createVercelResponse(res));
+          });
+
+          server.middlewares.use('/api/delete-own-account', async (req, res) => {
+            const { default: handler } = await import('./api/delete-own-account');
+            (req as any).body = await readJsonBody(req);
+            await handler(req, createVercelResponse(res));
+          });
         },
       },
     ],
