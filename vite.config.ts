@@ -46,12 +46,6 @@ export default defineConfig(() => {
             await handler(req, createVercelResponse(res));
           });
 
-          server.middlewares.use('/api/send-reminder', async (req, res) => {
-            const { default: handler } = await import('./api/send-reminder');
-            (req as any).body = await readJsonBody(req);
-            await handler(req, createVercelResponse(res));
-          });
-
           server.middlewares.use('/api/delete-user', async (req, res) => {
             const { default: handler } = await import('./api/delete-user');
             (req as any).body = await readJsonBody(req);
