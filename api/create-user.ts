@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 // Initialiser le client Supabase avec la clé SERVICE ROLE pour avoir les droits d'admin
 const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL as string,
+  process.env.SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 );
 
