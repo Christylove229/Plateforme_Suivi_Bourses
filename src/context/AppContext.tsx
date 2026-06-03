@@ -21,7 +21,7 @@ interface AppContextProps {
   logout: () => Promise<void>;
   changePassword: (newPass: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
-  adminCreateUser: (prenom: string, nom: string, email: string, domaine: string) => Promise<{ success: boolean; tempPass: string; error?: string }>;
+  adminCreateUser: (prenom: string, nom: string, email: string, domaine: string) => Promise<{ success: boolean; message: string; error?: string }>;
   adminToggleUserActive: (userId: string, currentStatus: boolean) => Promise<void>;
   adminDeleteUser: (userId: string) => Promise<string | null>;
   deleteUser: () => Promise<string | null>;
@@ -274,42 +274,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const appUrl = window.location.origin;
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
         },
-        body: JSON.stringify({ prenom, nom, email, domaine, appUrl })
+        body: JSON.stringify({ prenom, nom, email, domaine })
       });
       const data = await res.json();
-      
+
       if (!res.ok) {
         setLoading(false);
-        return { success: false, tempPass: '', error: data.error || 'Erreur inconnue' };
+        return { success: false, message: '', error: data.error || 'Erreur inconnue' };
       }
 
       // Add to local log for display
       const newEmailLog: SentInvitationEmailSimulated = {
         id: 'e-' + Math.random().toString(36).substring(2, 9),
         to: email,
-        subject: `🎒 Votre accès à la Plateforme de Bourses : ${prenom} ${nom}`,
+        subject: `🎒 Invitation à ScholarTrack : ${prenom} ${nom}`,
         prenom,
         nom,
-        tempPass: data.tempPass,
+        tempPass: 'Voir email d\'invitation',
         sentAt: new Date().toISOString(),
         type: 'INVITATION',
-        appUrl
+        appUrl: window.location.origin
       };
       setEmails(prev => [newEmailLog, ...prev]);
 
       fetchData(); // Refresh profiles list
       setLoading(false);
-      return { success: true, tempPass: data.tempPass };
+      return { success: true, message: data.message || 'Invitation envoyée' };
     } catch (err: any) {
       setLoading(false);
-      return { success: false, tempPass: '', error: 'Erreur réseau.' };
+      return { success: false, message: '', error: 'Erreur réseau.' };
     }
   };
 

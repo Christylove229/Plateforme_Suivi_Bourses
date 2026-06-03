@@ -31,7 +31,7 @@ export const AdminView: React.FC = () => {
   const [formDomaine, setFormDomaine] = useState('');
   
   const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<{ tempPass: string; email: string } | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   // Copied indicator state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -50,13 +50,13 @@ export const AdminView: React.FC = () => {
       return;
     }
 
-    const { success, tempPass, error } = await adminCreateUser(formPrenom, formNom, formEmail, formDomaine);
+    const { success, message, error } = await adminCreateUser(formPrenom, formNom, formEmail, formDomaine);
     if (!success && error) {
       setFormError(error);
       return;
     }
 
-    setFormSuccess({ tempPass, email: formEmail });
+    setFormSuccess(message || 'Invitation envoyée avec succès');
     setFormPrenom('');
     setFormNom('');
     setFormEmail('');
@@ -122,24 +122,13 @@ export const AdminView: React.FC = () => {
               <div className="p-4 bg-emerald-500/15 border border-emerald-500/25 rounded-xl text-xs space-y-2 relative overflow-hidden">
                 <p className="text-emerald-400 font-bold flex items-center gap-1">
                   <UserCheck2 className="h-4 w-4 shrink-0" />
-                  Compte créé d'excellence !
+                  Invitation envoyée !
                 </p>
                 <p className="text-slate-300 leading-normal">
-                  L'utilisatrice a reçu l'invitation automatisée (via API Resend). Le mot de passe temporaire généré est :
+                  L'utilisatrice a reçu l'invitation par email. Elle pourra définir son mot de passe en cliquant sur le lien d'invitation.
                 </p>
-                
-                <div className="flex items-center justify-between p-2 bg-slate-900 border border-slate-800 rounded-lg">
-                  <span className="font-mono text-white text-xs font-bold selection:bg-amber-500 selection:text-slate-950">{formSuccess.tempPass}</span>
-                  <button
-                    onClick={() => handleCopy(formSuccess.tempPass, 'temp-pass')}
-                    type="button"
-                    className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded"
-                  >
-                    {copiedId === 'temp-pass' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
                 <p className="text-[10px] text-slate-500 italic">
-                  Ce mot de passe devra être changé obligatoirement dès sa première mise en relation.
+                  L'utilisateur devra changer son mot de passe lors de sa première connexion.
                 </p>
               </div>
             )}
