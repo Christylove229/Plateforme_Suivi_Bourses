@@ -66,11 +66,13 @@ Dans les settings du projet Vercel, ajoute ces variables :
 
 | Variable | Description | Source |
 |----------|-------------|--------|
-| `VITE_SUPABASE_URL` | URL du projet Supabase | Supabase Dashboard > Settings > API |
-| `VITE_SUPABASE_ANON_KEY` | Clé publique Supabase | Supabase Dashboard > Settings > API |
-| `VITE_SUPABASE_SERVICE_ROLE_KEY` | Clé admin Supabase | Supabase Dashboard > Settings > API |
-| `VITE_RESEND_API_KEY` | Clé API Resend | Resend Dashboard > API Keys |
-| `VITE_GEMINI_API_KEY` | Clé API Google Gemini | Google AI Studio |
+| `VITE_SUPABASE_URL` | URL du projet Supabase (Frontend) | Supabase Dashboard > Settings > API |
+| `VITE_SUPABASE_ANON_KEY` | Clé publique Supabase (Frontend) | Supabase Dashboard > Settings > API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé admin Supabase (Serverless) | Supabase Dashboard > Settings > API |
+| `RESEND_API_KEY` | Clé API Resend (Serverless) | Resend Dashboard > API Keys |
+| `GEMINI_API_KEY` | Clé API Google Gemini (Serverless) | Google AI Studio |
+
+**Important** : Les variables avec le préfixe `VITE_` sont utilisées par le frontend React. Les variables sans préfixe sont utilisées par les fonctions serverless dans le dossier `api/`.
 
 ### 3. Configurer les fonctions serverless
 
